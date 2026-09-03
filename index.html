@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Corso AI Literacy — Dynatech / Microgeo</title>
+<style>
+  :root{
+    --navy:#16243f; --blue:#2b5ac9; --blue-light:#eaf1fe;
+    --gray-bg:#f6f7fa; --gray-border:#e3e6ec; --gray-text:#555f70;
+    --green:#16a34a; --green-bg:#eafbef; --red:#dc2626; --red-bg:#fdecec;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:Arial, Helvetica, sans-serif; background:#fff;
+    color:var(--navy); line-height:1.5;
+  }
+  header{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:20px 32px; border-bottom:1px solid var(--gray-border);
+    position:sticky; top:0; background:#fff; z-index:10;
+  }
+  header .brand{font-weight:bold; font-size:18px;}
+  header .nav-links{display:flex; gap:14px; align-items:center; font-size:13px;}
+  header .nav-links a, header .nav-links button{
+    color:var(--blue); text-decoration:none; font-weight:bold; background:none;
+    border:none; cursor:pointer; padding:0; font-size:13px; margin:0;
+  }
+  main{max-width:760px; margin:0 auto; padding:32px 20px 80px;}
+  .pill{
+    display:inline-block; background:var(--blue-light); color:var(--blue);
+    font-size:12px; font-weight:bold; padding:6px 14px; border-radius:20px;
+    margin-bottom:14px;
+  }
+  .step{display:none;}
+  .step.active{display:block;}
+  h1{font-size:28px; margin:0 0 8px;}
+  h2{font-size:20px; margin:0 0 10px;}
+  p.lead{color:var(--gray-text); margin:0 0 28px;}
+  .card{
+    background:var(--gray-bg); border:1px solid var(--gray-border);
+    border-radius:12px; padding:24px; margin-bottom:20px;
+  }
+  .info-row{display:flex; gap:14px; align-items:flex-start; margin-bottom:16px;}
+  .info-row .num{
+    flex:0 0 28px; height:28px; border-radius:50%; background:var(--blue);
+    color:#fff; font-weight:bold; font-size:13px; display:flex;
+    align-items:center; justify-content:center;
+  }
+  .info-row div.txt strong{display:block; font-size:14px;}
+  .info-row div.txt span{font-size:13px; color:var(--gray-text);}
+  label{display:block; font-size:13px; font-weight:bold; margin:14px 0 6px;}
+  input[type=text], input[type=email], select{
+    width:100%; padding:10px 12px; border:1px solid var(--gray-border);
+    border-radius:8px; font-size:15px; background:#fff;
+  }
+  button.primary{
+    background:var(--blue); color:#fff; border:none; padding:12px 22px;
+    border-radius:8px; font-size:15px; font-weight:bold; cursor:pointer;
+    margin-top:18px;
+  }
+  button.primary:disabled{background:#b7c3dd; cursor:not-allowed;}
+  button.secondary{
+    background:transparent; color:var(--blue); border:1px solid var(--blue);
+    padding:12px 22px; border-radius:8px; font-size:15px; font-weight:bold;
+    cursor:pointer; margin-top:18px; margin-left:8px;
+  }
+  .error{color:var(--red); font-size:13px; margin-top:8px; display:none;}
+  .video-wrap{
+    position:relative; width:100%; padding-top:56.25%; border-radius:10px;
+    overflow:hidden; background:#000; margin-bottom:16px;
+  }
+  .video-wrap iframe{position:absolute; top:0; left:0; width:100%; height:100%; border:0;}
+  .progress-outer{
+    width:100%; height:10px; background:var(--gray-border); border-radius:6px;
+    overflow:hidden; margin-top:10px;
+  }
+  .progress-inner{height:100%; width:0%; background:var(--blue); transition:width .3s;}
+  .progress-label{font-size:13px; color:var(--gray-text); margin-top:6px;}
+  .status-badge{
+    display:inline-flex; align-items:center; gap:6px; font-size:13px;
+    font-weight:bold; padding:6px 12px; border-radius:20px; margin-top:14px;
+  }
+  .status-badge.locked{background:var(--red-bg); color:var(--red);}
+  .status-badge.unlocked{background:var(--green-bg); color:var(--green);}
+  .hint{font-size:12.5px; color:var(--gray-text); margin:8px 0 0;}
+  .slides-block{margin-top:20px; padding-top:18px; border-top:1px solid var(--gray-border);}
+  .slides-block button{margin-top:0; margin-left:0;}
+  .quiz-q{
+    background:#fff; border:1px solid var(--gray-border); border-radius:10px;
+    padding:16px 18px; margin-bottom:14px;
+  }
+  .quiz-q .q-text{font-size:14.5px; font-weight:bold; margin-bottom:10px;}
+  .quiz-q label.opt{
+    display:flex; gap:8px; align-items:flex-start; font-weight:normal;
+    font-size:14px; margin:0 0 8px; cursor:pointer;
+  }
+  .quiz-q label.opt input{margin-top:3px;}
+  .quiz-progress{font-size:13px; color:var(--gray-text); margin-bottom:16px;}
+  .result-score{font-size:44px; font-weight:bold; margin:8px 0;}
+  .result-pass{color:var(--green);}
+  .result-fail{color:var(--red);}
+  footer{text-align:center; font-size:12px; color:var(--gray-text); padding:20px;}
+  .config-note{
+    background:#fff3e6; border:1px solid #f9c98a; border-radius:8px;
+    padding:12px 16px; font-size:12.5px; color:#7a4a12; margin-bottom:24px;
+  }
+  .config-note.ok{
+    background:#e8f7ee; border:1px solid #9bdcb4; color:#1f6b3d;
+  }
+  .privacy-box{
+    margin-top:18px; padding-top:16px; border-top:1px solid var(--gray-border);
+  }
+  .privacy-summary{font-size:13px; color:var(--gray-text); margin:0 0 10px;}
+  .privacy-details{margin-bottom:14px;}
+  .privacy-details summary{
+    font-size:13px; font-weight:bold; color:var(--blue); cursor:pointer;
+  }
+  .privacy-full{
+    max-height:220px; overflow-y:auto; background:#fff;
+    border:1px solid var(--gray-border); border-radius:8px;
+    padding:14px 16px; font-size:12.5px; color:var(--gray-text);
+    line-height:1.5; margin-top:10px;
+  }
+  .privacy-full p{margin:0 0 10px;}
+  .privacy-full p:last-child{margin-bottom:0;}
+  .privacy-check-label{
+    display:flex; align-items:flex-start; gap:8px; font-weight:normal;
+    font-size:13px; color:var(--navy); margin:0; cursor:pointer;
+  }
+  .privacy-check-label input{margin-top:3px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">DYNATECH · MICROGEO</div>
+  <div class="nav-links" id="navLinks" style="display:none;">
+    <a id="navSlides" href="#" target="_blank" rel="noopener">📄 Scarica le slide</a>
+  </div>
+</header>
+
+<main>
+
+  <div class="config-note ok" id="configNote">
+    ✅ Configurato: i valori reali (dominio aziendale, ID video YouTube, link alle slide,
+    URL Google Apps Script) sono impostati nel blocco <code>CONFIG</code> in fondo al file.
+  </div>
+
+  <!-- STEP 0: LANDING -->
+  <div class="step active" id="step0">
+    <span class="pill">EU AI ACT · ART. 4 — AI LITERACY</span>
+    <h1>Corso di Alfabetizzazione sull'Intelligenza Artificiale</h1>
+    <p class="lead">
+      Formazione obbligatoria prevista dal Regolamento UE 2024/1689 (EU AI Act) per chi
+      utilizza strumenti di intelligenza artificiale nel lavoro quotidiano. Richiede circa
+      20-30 minuti in totale.
+    </p>
+    <div class="card">
+      <div class="info-row">
+        <div class="num">1</div>
+        <div class="txt"><strong>Ti identifichi</strong>
+          <span>Con la tua email aziendale, per registrare la formazione a tuo nome.</span></div>
+      </div>
+      <div class="info-row">
+        <div class="num">2</div>
+        <div class="txt"><strong>Guardi il videocorso</strong>
+          <span>Per intero — il questionario si sblocca solo dopo aver visto tutto il video.</span></div>
+      </div>
+      <div class="info-row">
+        <div class="num">3</div>
+        <div class="txt"><strong>Superi il questionario</strong>
+          <span>18 domande a risposta multipla, soglia minima 14/18. Puoi riprovare se non superi.</span></div>
+      </div>
+      <div class="info-row">
+        <div class="num">4</div>
+        <div class="txt"><strong>Ricevi l'attestato</strong>
+          <span>Dopo la verifica, riceverai l'attestato di formazione via email. Le slide del corso restano scaricabili in ogni momento.</span></div>
+      </div>
+      <button class="primary" id="btnStart">Inizia il corso →</button>
+    </div>
+  </div>
+
+  <!-- STEP 1: IDENTIFICAZIONE -->
+  <div class="step" id="step1">
+    <span class="pill">STEP 1 · 4</span>
+    <h1>Identificati per iniziare</h1>
+    <p class="lead">Usa la tua email aziendale. Serve per registrare la formazione a tuo nome.</p>
+    <div class="card">
+      <label for="nome">Nome</label>
+      <input type="text" id="nome" placeholder="Mario">
+      <label for="cognome">Cognome</label>
+      <input type="text" id="cognome" placeholder="Rossi">
+      <label for="organizzazione">Organizzazione</label>
+      <select id="organizzazione" required>
+        <option value="" selected disabled>Seleziona...</option>
+        <option value="Dynatech">Dynatech</option>
+        <option value="Microgeo">Microgeo</option>
+      </select>
+      <label for="email">Email aziendale</label>
+      <input type="email" id="email" placeholder="nome.cognome@dynatech.it">
+      <div class="error" id="err1">Compila nome, cognome e un'email del dominio aziendale (es. @dynatech.it).</div>
+
+      <div class="privacy-box">
+        <p class="privacy-summary">
+          I dati raccolti in questo form (nome, cognome, email, organizzazione) sono trattati da
+          Dynatech SRL e Microgeo SRL, contitolari del trattamento, per erogare ed attestare la
+          formazione obbligatoria prevista dall'art. 4 del Regolamento UE 2024/1689 (AI Act).
+        </p>
+        <details class="privacy-details">
+          <summary>Leggi l'informativa completa</summary>
+          <div class="privacy-full">
+            <p><strong>INFORMATIVA SUL TRATTAMENTO DEI DATI PERSONALI</strong><br>
+            (artt. 13 e 26 GDPR – Regolamento UE 2016/679)<br>
+            Portale di formazione obbligatoria "AI Literacy" (art. 4 Regolamento UE 2024/1689 – AI Act)</p>
+
+            <p><strong>1. TITOLARI DEL TRATTAMENTO (contitolari, art. 26 GDPR)</strong><br>
+            Dynatech SRL e Microgeo SRL sono contitolari del trattamento, in quanto determinano
+            congiuntamente finalità e modalità del trattamento dei dati raccolti tramite questo portale.</p>
+
+            <p>Dynatech SRL – Via Ezio Cosimini, 8/H, 51018 Pieve a Nievole (PT) – info@dynatech.it – Tel: +39 351 421 0591<br>
+            Microgeo SRL – Via San Quirico, 306/A, 50013 Campi Bisenzio (FI) – P.IVA 05256310482 – Tel: 055 895 4766</p>
+
+            <p>Per richieste sul trattamento dati: privacy@microgeo.it</p>
+
+            <p><strong>2. FINALITÀ E BASE GIURIDICA</strong><br>
+            I dati sono raccolti per erogare la formazione obbligatoria prevista dall'art. 4 AI Act
+            (in vigore dal 2 febbraio 2025), tracciare la partecipazione (video, slide, questionario)
+            e rilasciare l'attestato come prova dell'adempimento. Base giuridica: adempimento di un
+            obbligo legale (art. 6.1.c GDPR) e misure organizzative connesse al rapporto di
+            lavoro/collaborazione (art. 6.1.b GDPR o legittimo interesse organizzativo). Non è
+            richiesto il consenso, non essendo una finalità di marketing.</p>
+
+            <p><strong>3. CATEGORIE DI DATI TRATTATI</strong><br>
+            Dati identificativi (nome, cognome, organizzazione, email aziendale) e dati di fruizione
+            del corso (apertura/completamento video, download slide, questionario, punteggio, esito,
+            invio attestato). Nessun dato appartenente a categorie particolari (art. 9 GDPR).</p>
+
+            <p><strong>4. DESTINATARI DEI DATI</strong><br>
+            I dati sono trattati con il supporto di Google (Google Sheets/Apps Script) e Zoho (Zoho
+            Sheet, infrastruttura europea), che agiscono come responsabili del trattamento o
+            soggetti autorizzati.</p>
+
+            <p><strong>5. PERIODO DI CONSERVAZIONE</strong><br>
+            I dati sono conservati per 10 anni dal completamento della formazione, o per il periodo
+            superiore richiesto da eventuali modifiche normative in materia di AI Act.</p>
+
+            <p><strong>6. NATURA DEL CONFERIMENTO</strong><br>
+            Il conferimento dei dati è necessario per erogare la formazione obbligatoria e rilasciare
+            l'attestato. Senza questi dati non è possibile completare l'adempimento previsto
+            dall'art. 4 AI Act.</p>
+
+            <p><strong>7. DIRITTI DELL'INTERESSATO</strong><br>
+            Contattando privacy@microgeo.it si può esercitare: diritto di accesso (art. 15),
+            rettifica (art. 16), cancellazione (art. 17), limitazione (art. 18), portabilità
+            (art. 20), opposizione (art. 21), e il diritto di reclamo al Garante per la protezione
+            dei dati personali (www.garanteprivacy.it).</p>
+
+            <p><strong>8. PROCESSO DECISIONALE AUTOMATIZZATO</strong><br>
+            Non è previsto alcun processo decisionale automatizzato o profilazione con effetti
+            giuridici sull'interessato. L'esito del questionario è calcolato automaticamente ma
+            ha valore solo didattico/formativo.</p>
+          </div>
+        </details>
+        <label class="privacy-check-label" for="privacyCheck">
+          <input type="checkbox" id="privacyCheck">
+          Ho letto e compreso l'informativa privacy
+        </label>
+      </div>
+
+      <button class="primary" id="btnStep1" disabled>Continua →</button>
+    </div>
+  </div>
+
+  <!-- STEP 2: VIDEO -->
+  <div class="step" id="step2">
+    <span class="pill">STEP 2 · 4</span>
+    <h1>Guarda il video corso</h1>
+    <p class="lead">Il questionario si sblocca solo dopo aver visto il video per intero e scaricato le slide. Non è possibile saltare avanti.</p>
+    <div class="card">
+      <div class="video-wrap"><div id="player"></div></div>
+      <p class="hint">⏱️ Il video va guardato per intero: un timer traccia i secondi effettivamente
+        visti. Se salti avanti con la barra di scorrimento, i secondi saltati non vengono
+        conteggiati e il questionario non si sblocca.</p>
+      <div class="progress-outer"><div class="progress-inner" id="progressBar"></div></div>
+      <div class="progress-label" id="progressLabel">0% visionato</div>
+      <span class="status-badge locked" id="statusBadge">🔒 Questionario bloccato</span>
+
+      <div class="slides-block">
+        <button class="secondary" id="btnDownloadSlides">📄 Scarica le slide del corso (PDF)</button>
+        <p class="hint">⚠️ È obbligatorio scaricare le slide: senza questo passaggio il pulsante
+          per accedere al questionario non si attiva, anche se il video è stato visto per intero.</p>
+      </div>
+
+      <button class="primary" id="btnStep2" disabled>Vai al questionario →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: QUESTIONARIO -->
+  <div class="step" id="step3">
+    <span class="pill">STEP 3 · 4</span>
+    <h1>Questionario di verifica</h1>
+    <p class="lead">18 domande, soglia minima 14/18. Rispondi a tutte prima di inviare.</p>
+    <div class="quiz-progress" id="quizProgress"></div>
+    <div id="quizContainer"></div>
+    <div class="error" id="errQuiz">Rispondi a tutte le domande prima di inviare.</div>
+    <button class="primary" id="btnSubmitQuiz">Invia risposte →</button>
+  </div>
+
+  <!-- STEP 4: RISULTATO -->
+  <div class="step" id="step4">
+    <span class="pill">STEP 4 · 4</span>
+    <h1>Risultato</h1>
+    <div class="card" id="resultCard"></div>
+  </div>
+
+</main>
+
+<footer>Registro di formazione AI Literacy — Art. 4 EU AI Act (Reg. UE 2024/1689)</footer>
+
+<script>
+/* ======================= CONFIG — modifica qui ======================= */
+const CONFIG = {
+  allowedDomains: ["dynatech.it", "microgeo.it"],
+  youtubeVideoId: "XIhLI52kl8U",
+  minWatchPercent: 90,
+  passThreshold: 14,     // su 18
+  slidesUrl: "https://drive.google.com/uc?export=download&id=1_O2ssEVBweXvtTOti009ALgk-58nZSC1",
+  logEndpoint: "https://script.google.com/macros/s/AKfycbzTfQMvvz8WlCI9HoS4XkaJOh3Xc-tU_su6bwxkA1kStbI2B-pBXY35Fc3HQ132JNrhqg/exec"
+};
+/* ======================================================================= */
+
+const QUESTIONS = [
+  { q: "In base all'Articolo 4 del Regolamento EU AI Act (UE 2024/1689), chi è tenuto a garantire un livello sufficiente di alfabetizzazione in materia di IA?",
+    options: ["Solo i Provider che sviluppano modelli di IA","Solo gli utilizzatori (Deployer) di sistemi IA ad alto rischio","Fornitori e Deployer devono garantire l'AI Literacy a tutto il personale che sviluppa, gestisce o utilizza sistemi di IA","Solo il personale IT e gli amministratori di sistema"], correct: 2 },
+  { q: "L'obbligo di AI Literacy (Art. 4) è entrato in vigore il:",
+    options: ["2 agosto 2026 (data di inizio sanzionamento)","2 febbraio 2025 (data di entrata in vigore del Regolamento)","2 dicembre 2027 (applicabilità sistemi high-risk Annex III)","2 agosto 2028 (applicabilità prodotti regolamentati)"], correct: 1 },
+  { q: "In qualità di azienda che utilizza strumenti IA di terzi (es. Copilot 365, ChatGPT) per supportare il lavoro quotidiano, l'azienda si configura come:",
+    options: ["Provider, poiché commercializza sistemi di IA","Deployer (Utilizzatore), poiché impiega sistemi IA di terzi nei processi lavorativi","Operatore Autonomo, poiché sviluppa algoritmi proprietari","Ente Regolatore, poiché verifica la conformità dei fornitori"], correct: 1 },
+  { q: "Quale delle seguenti NON è una competenza fondamentale di AI Literacy richiesta dall'Art. 4?",
+    options: ["Comprendere il funzionamento e i limiti degli algoritmi","Sviluppare autonomamente modelli di machine learning","Gestire la privacy e la protezione dei dati nei prompt","Esercitare una supervisione umana effettiva sugli output"], correct: 1 },
+  { q: "In merito alla responsabilità decisionale quando si utilizzano strumenti di IA generativa, quale affermazione è corretta?",
+    options: ["L'IA è un decisore autonomo e la responsabilità è condivisa con il fornitore del software","La responsabilità legale e operativa ricade sempre sulle persone; l'IA è solo uno strumento di supporto","Se l'output è generato da un tool enterprise, la responsabilità è del provider","La responsabilità è del DPO (Data Protection Officer) aziendale"], correct: 1 },
+  { q: "Qual è la sanzione massima prevista dal GDPR per un data breach che comporti il trattamento illecito di dati personali?",
+    options: ["Fino a 7% del fatturato globale","Fino a 15 milioni di euro o il 3% del fatturato globale","Fino a 20 milioni di euro o il 4% del fatturato globale","Fino a 35 milioni di euro o il 7% del fatturato globale"], correct: 2 },
+  { q: "Qual è la sanzione massima prevista dall'EU AI Act per violazioni gravi (es. sistemi proibiti Art. 5)?",
+    options: ["Fino a 20 milioni di euro o il 4% del fatturato globale","Fino a 35 milioni di euro o il 7% del fatturato globale","Fino a 15 milioni di euro o il 3% del fatturato globale","Fino a 10 milioni di euro o il 2% del fatturato globale"], correct: 1 },
+  { q: "Cosa si intende per 'Allucinazione' in un modello di IA generativa?",
+    options: ["Un errore di rendering grafico nei video generati","Quando l'IA inventa informazioni false o inesistenti, presentandole con estrema sicurezza e coerenza sintattica","Un malfunzionamento hardware del server che ospita il modello","La sovraccarico del sistema causato da prompt troppo lunghi"], correct: 1 },
+  { q: "Quale delle seguenti pratiche rappresenta una buona condotta per l'uso sicuro dell'IA generativa in azienda?",
+    options: ["Inserire codice sorgente riservato e password nei prompt pubblici per ottenere risposte più precise","Utilizzare esclusivamente strumenti di IA approvati dall'IT aziendale e verificare sempre l'accuratezza degli output","Utilizzare account personali gratuiti per attività aziendali per maggiore velocità","Fidarsi ciecamente degli output dell'IA senza verifica, specialmente se generati da modelli enterprise"], correct: 1 },
+  { q: "Secondo l'Art. 50 del Regolamento EU AI Act, quando un'azienda utilizza un chatbot per interagire con i clienti, è obbligata a:",
+    options: ["Offrire uno sconto del 10% se il cliente si accorge di interagire con un sistema automatizzato","Informare in modo chiaro ed esplicito gli utenti che stanno interagendo con un sistema di IA, al primo contatto","Nascondere la natura artificiale del sistema per non influenzare l'esperienza utente","Richiedere il consenso esplicito solo se il chatbot raccoglie dati biometrici"], correct: 1 },
+  { q: "In relazione ai contenuti sintetici generati dall'IA (testi, immagini, audio, video), quale obbligo spetta al Deployer (utilizzatore)?",
+    options: ["Sviluppare algoritmi proprietari di watermarking per ogni file generato","Verificare la presenza di watermark e metadati machine-readable e non rimuoverli o alterarli","Rimuovere i watermark per rendere i contenuti più fruibili ai clienti","Pagare una royalty al provider per ogni contenuto sintetico distribuito"], correct: 1 },
+  { q: "Quale dei seguenti dati NON deve mai essere inserito in un prompt di uno strumento di IA gratuito o pubblico?",
+    options: ["Informazioni di pubblico dominio sulle normative europee","Nomi, email, codici fiscali di clienti o colleghi, bilanci non pubblicati, password o codice sorgente interno","Domande generiche sulla storia dell'Intelligenza Artificiale","Richieste di riassunto di articoli scientifici open access"], correct: 1 },
+  { q: "Quando si utilizza un tool di IA generativa gratuita (es. versione free di ChatGPT), cosa può accadere ai dati inseriti nel prompt?",
+    options: ["Vengono automaticamente criptati con standard militari e cancellati dopo 24 ore","Possono essere conservati e utilizzati dal provider per addestrare i modelli futuri, con rischio di perdita di riservatezza","Sono protetti dal segreto professionale del fornitore e non possono essere riutilizzati","Vengono inviati solo al DPO aziendale per verifica di conformità"], correct: 1 },
+  { q: "Quali sono i 5 elementi fondamentali di un prompt efficace e professionale (prompt engineering aziendale)?",
+    options: ["Emoji, hashtag, lunghezza massima, tono ironico, formato Markdown","Ruolo, Contesto, Compito, Vincoli, Formato Output","Keywords, Target, Budget, Deadline, KPI","Titolo, Sottotitolo, Introduzione, Corpo, Conclusione"], correct: 1 },
+  { q: "Nella tecnica dell'anonimizzazione dei dati prima di inserirli in un sistema di IA, quale approccio è corretto?",
+    options: ["Sostituire i dati sensibili con segnaposto generici (es. [CLIENTE_A], [IMPORTO], [CF_CLIENTE])","Inserire i dati reali ma aggiungere una nota in calce che chiede all'IA di mantenere il segreto","Utilizzare solo la prima lettera del cognome per mantenere un minimo di identificabilità","Anonimizzare è facoltativo se il tool è certificato ISO 27001"], correct: 0 },
+  { q: "Il ciclo operativo 'Human-in-the-Loop' prevede le seguenti fasi in ordine corretto:",
+    options: ["Approvazione → Elaborazione IA → Controllo Umano → Input & Prompt","Input & Prompt → Elaborazione IA → Controllo Umano → Approvazione","Controllo Umano → Input & Prompt → Elaborazione IA → Approvazione","Elaborazione IA → Input & Prompt → Controllo Umano → Approvazione"], correct: 1 },
+  { q: "In relazione ai Deepfake (contenuti audio/video sintetici che simulano persone reali), l'EU AI Act stabilisce che:",
+    options: ["È vietato diffonderli senza dichiararne la natura artificiale; i Deployer devono apporre etichette ben visibili","Sono consentiti senza restrizioni se usati solo per scopi di marketing interno","Richiedono solo una nota a piè di pagina in carattere 8pt","Sono regolamentati solo se superano i 5 minuti di durata"], correct: 0 },
+  { q: "Prima di elaborare o inviare qualsiasi informazione a un sistema di IA, la checklist operativa del dipendente richiede di verificare 4 punti. Quale dei seguenti NON fa parte di questa checklist?",
+    options: ["I dati sono pubblici o opportunamente anonimizzati?","Lo strumento di IA in uso è autorizzato dall'azienda?","Ho revisionato e verificato l'accuratezza del risultato ottenuto?","Ho condiviso il prompt con tutti i colleghi del reparto per ottenere un parere condiviso?"], correct: 3 }
+];
+
+let participant = { nome: "", cognome: "", email: "", organizzazione: "" };
+let player, videoDuration = 0, unlocked = false;
+let watchedSeconds = new Set();
+let progressTimer = null;
+let videoStarted = false;
+let slidesDownloaded = false;
+let questionarioScaricatoLogged = false;
+
+function showStep(n){
+  document.querySelectorAll(".step").forEach(s => s.classList.remove("active"));
+  document.getElementById("step" + n).classList.add("active");
+  window.scrollTo(0,0);
+}
+
+document.getElementById("btnStart").addEventListener("click", () => showStep(1));
+
+// ---- STEP 1 ----
+document.getElementById("btnStep1").addEventListener("click", () => {
+  const nome = document.getElementById("nome").value.trim();
+  const cognome = document.getElementById("cognome").value.trim();
+  const organizzazione = document.getElementById("organizzazione").value.trim();
+  const email = document.getElementById("email").value.trim().toLowerCase();
+  const err = document.getElementById("err1");
+  const domain = email.split("@")[1];
+
+  if (!nome || !cognome || !organizzazione || !email || !CONFIG.allowedDomains.includes(domain)) {
+    err.style.display = "block";
+    return;
+  }
+  err.style.display = "none";
+  participant = { nome, cognome, email, organizzazione };
+
+  document.getElementById("navLinks").style.display = "flex";
+  document.getElementById("navSlides").href = CONFIG.slidesUrl;
+
+  showStep(2);
+  initPlayer();
+});
+
+document.getElementById("privacyCheck").addEventListener("change", (e) => {
+  document.getElementById("btnStep1").disabled = !e.target.checked;
+});
+
+// ---- STEP 2: YouTube IFrame API ----
+function loadYouTubeAPI(){
+  return new Promise((resolve) => {
+    if (window.YT && window.YT.Player) return resolve();
+    const tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.body.appendChild(tag);
+    window.onYouTubeIframeAPIReady = resolve;
+  });
+}
+
+async function initPlayer(){
+  await loadYouTubeAPI();
+  player = new YT.Player("player", {
+    videoId: CONFIG.youtubeVideoId,
+    playerVars: { rel: 0, modestbranding: 1, controls: 1, origin: window.location.origin },
+    events: { onReady: () => { videoDuration = player.getDuration(); }, onStateChange: onPlayerStateChange }
+  });
+}
+
+function onPlayerStateChange(e){
+  if (e.data === YT.PlayerState.PLAYING){
+    if (!videoStarted){
+      videoStarted = true;
+      logEvent({ evento: "video_aperto" });
+    }
+    if (progressTimer) clearInterval(progressTimer);
+    progressTimer = setInterval(trackProgress, 1000);
+  } else if (progressTimer) clearInterval(progressTimer);
+}
+
+function trackProgress(){
+  if (!player || typeof player.getCurrentTime !== "function") return;
+  watchedSeconds.add(Math.floor(player.getCurrentTime()));
+  const duration = videoDuration || player.getDuration() || 1;
+  const percent = Math.min(100, Math.round((watchedSeconds.size / duration) * 100));
+
+  document.getElementById("progressBar").style.width = percent + "%";
+  document.getElementById("progressLabel").textContent = percent + "% visionato";
+
+  if (percent >= CONFIG.minWatchPercent && !unlocked){
+    unlocked = true;
+    logEvent({ evento: "video_completato" });
+    updateQuizUnlock();
+  }
+}
+
+// Il pulsante per accedere al questionario si sblocca solo quando ENTRAMBE le
+// condizioni sono vere: video completato e slide scaricate.
+function updateQuizUnlock(){
+  const ready = unlocked && slidesDownloaded;
+  document.getElementById("btnStep2").disabled = !ready;
+  const badge = document.getElementById("statusBadge");
+  if (ready){
+    badge.textContent = "✅ Questionario sbloccato";
+    badge.className = "status-badge unlocked";
+  } else {
+    badge.textContent = "🔒 Questionario bloccato";
+    badge.className = "status-badge locked";
+  }
+}
+
+document.getElementById("btnDownloadSlides").addEventListener("click", () => {
+  window.open(CONFIG.slidesUrl, "_blank", "noopener");
+  if (!slidesDownloaded){
+    slidesDownloaded = true;
+    logEvent({ evento: "slide_scaricate" });
+    updateQuizUnlock();
+  }
+});
+
+document.getElementById("btnStep2").addEventListener("click", () => {
+  if (!questionarioScaricatoLogged){
+    questionarioScaricatoLogged = true;
+    logEvent({ evento: "questionario_scaricato" });
+  }
+  buildQuiz();
+  showStep(3);
+});
+
+// ---- STEP 3: QUIZ ----
+function buildQuiz(){
+  const container = document.getElementById("quizContainer");
+  container.innerHTML = "";
+  QUESTIONS.forEach((item, qi) => {
+    const div = document.createElement("div");
+    div.className = "quiz-q";
+    const opts = item.options.map((opt, oi) => `
+      <label class="opt">
+        <input type="radio" name="q${qi}" value="${oi}">
+        <span>${String.fromCharCode(65+oi)}) ${opt}</span>
+      </label>`).join("");
+    div.innerHTML = `<div class="q-text">${qi+1}. ${item.q}</div>${opts}`;
+    container.appendChild(div);
+  });
+  document.getElementById("quizProgress").textContent = `${QUESTIONS.length} domande — soglia minima ${CONFIG.passThreshold}/${QUESTIONS.length}`;
+}
+
+document.getElementById("btnSubmitQuiz").addEventListener("click", () => {
+  const answers = [];
+  let allAnswered = true;
+  QUESTIONS.forEach((item, qi) => {
+    const sel = document.querySelector(`input[name="q${qi}"]:checked`);
+    if (!sel) allAnswered = false;
+    answers.push(sel ? parseInt(sel.value, 10) : null);
+  });
+
+  if (!allAnswered){
+    document.getElementById("errQuiz").style.display = "block";
+    return;
+  }
+  document.getElementById("errQuiz").style.display = "none";
+
+  let score = 0;
+  QUESTIONS.forEach((item, qi) => { if (answers[qi] === item.correct) score++; });
+
+  const passed = score >= CONFIG.passThreshold;
+
+  logEvent({
+    evento: "questionario_completato",
+    punteggio: score,
+    totale: QUESTIONS.length,
+    esito: passed ? "SUPERATO" : "NON SUPERATO"
+  }).then(risposta => {
+    const attestatoUrl = risposta && risposta.attestatoUrl;
+    showResult(score, passed, attestatoUrl);
+  });
+});
+
+function showResult(score, passed, attestatoUrl){
+  const card = document.getElementById("resultCard");
+  if (passed){
+    const bottoneAttestato = attestatoUrl
+      ? `<a class="secondary" style="text-decoration:none; display:inline-block;" href="${attestatoUrl}" target="_blank" rel="noopener">📄 Scarica il tuo attestato</a>`
+      : "";
+    card.innerHTML = `
+      <span class="status-badge unlocked">✅ Superato</span>
+      <div class="result-score result-pass">${score}/${QUESTIONS.length}</div>
+      <p>Complimenti, hai superato il questionario. La tua formazione è stata registrata.
+      Riceverai l'attestato anche via email.</p>
+      ${bottoneAttestato}
+      <a class="secondary" style="text-decoration:none; display:inline-block;" href="${CONFIG.slidesUrl}" target="_blank" rel="noopener">📄 Scarica di nuovo le slide</a>`;
+  } else {
+    card.innerHTML = `
+      <span class="status-badge locked">❌ Non superato</span>
+      <div class="result-score result-fail">${score}/${QUESTIONS.length}</div>
+      <p>Non hai raggiunto la soglia minima (${CONFIG.passThreshold}/${QUESTIONS.length}).
+      Ti consigliamo di rivedere il video e riprovare il questionario.</p>
+      <button class="primary" id="btnRetry">Riprova il questionario →</button>`;
+    document.getElementById("btnRetry").addEventListener("click", () => {
+      buildQuiz();
+      showStep(3);
+    });
+  }
+  showStep(4);
+}
+
+// ---- LOGGING verso Google Apps Script ----
+// Nota: niente "mode: no-cors" qui, altrimenti la risposta è opaca e non
+// leggibile — serve poter leggere il JSON di ritorno (es. attestatoUrl) dal
+// questionario. "Content-Type: text/plain" evita comunque la preflight CORS.
+// Restituisce una Promise che risolve nel JSON di risposta (o null in caso di
+// errore di rete/parsing), così le chiamate "fire-and-forget" possono
+// semplicemente ignorare il valore restituito.
+function logEvent(extra){
+  const payload = Object.assign({
+    nome: participant.nome,
+    cognome: participant.cognome,
+    email: participant.email,
+    organizzazione: participant.organizzazione,
+    timestamp: new Date().toISOString()
+  }, extra);
+
+  return fetch(CONFIG.logEndpoint, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload)
+  })
+    .then(res => res.json())
+    .catch(() => null);
+}
+</script>
+</body>
+</html>
