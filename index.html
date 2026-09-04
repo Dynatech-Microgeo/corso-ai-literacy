@@ -276,10 +276,10 @@
   <div class="step" id="step2">
     <span class="pill">STEP 2 · 4</span>
     <h1>Guarda il video corso</h1>
-    <p class="lead">Il questionario si sblocca solo dopo aver visto il video per intero e scaricato le slide. Non è possibile saltare avanti.</p>
+    <p class="lead">Il questionario si sblocca solo dopo aver visto almeno il 60% del video e scaricato le slide. Non è possibile saltare avanti.</p>
     <div class="card">
       <div class="video-wrap"><div id="player"></div></div>
-      <p class="hint">⏱️ Il video va guardato per intero: un timer traccia i secondi effettivamente
+      <p class="hint">⏱️ Va guardato almeno il 60% del video: un timer traccia i secondi effettivamente
         visti. Se salti avanti con la barra di scorrimento, i secondi saltati non vengono
         conteggiati e il questionario non si sblocca.</p>
       <div class="progress-outer"><div class="progress-inner" id="progressBar"></div></div>
@@ -323,7 +323,7 @@
 const CONFIG = {
   allowedDomains: ["dynatech.it", "microgeo.it"],
   youtubeVideoId: "XIhLI52kl8U",
-  minWatchPercent: 90,
+  minWatchPercent: 60,
   passThreshold: 14,     // su 18
   slidesUrl: "https://drive.google.com/uc?export=download&id=1_O2ssEVBweXvtTOti009ALgk-58nZSC1",
   logEndpoint: "https://script.google.com/macros/s/AKfycbzTfQMvvz8WlCI9HoS4XkaJOh3Xc-tU_su6bwxkA1kStbI2B-pBXY35Fc3HQ132JNrhqg/exec"
@@ -372,15 +372,78 @@ const QUESTIONS = [
 let participant = { nome: "", cognome: "", email: "", organizzazione: "" };
 let player, videoDuration = 0, unlocked = false;
 let watchedSeconds = new Set();
+let maxWatchedTime = 0;
 let progressTimer = null;
 let videoStarted = false;
 let slidesDownloaded = false;
 let questionarioScaricatoLogged = false;
+let currentStep = 0;
+let lastPersistAt = 0;
+
+// ---- PERSISTENZA localStorage (resiste a reload / tab in background / chiusura brusca) ----
+const STORAGE_KEY = "aiLiteracyProgress";
+const STORAGE_TTL_MS = 24 * 60 * 60 * 1000; // 24 ore
+
+function loadSavedProgress(){
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (!data || !data.savedAt || (Date.now() - data.savedAt) > STORAGE_TTL_MS){
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+    return data;
+  } catch (e) {
+    localStorage.removeItem(STORAGE_KEY);
+    return null;
+  }
+}
+
+function saveProgress(){
+  const data = {
+    savedAt: Date.now(),
+    participant,
+    step: currentStep,
+    watchedSeconds: Array.from(watchedSeconds),
+    maxWatchedTime,
+    unlocked,
+    slidesDownloaded,
+    videoStarted
+  };
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {}
+}
+
+function clearSavedProgress(){
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+}
+
+// Progresso eventualmente trovato al caricamento; usato solo per precompilare
+// lo step1 e per confrontare l'email al momento della conferma (vedi sotto).
+let savedProgress = loadSavedProgress();
+if (savedProgress && savedProgress.participant){
+  const p = savedProgress.participant;
+  document.getElementById("nome").value = p.nome || "";
+  document.getElementById("cognome").value = p.cognome || "";
+  document.getElementById("organizzazione").value = p.organizzazione || "";
+  document.getElementById("email").value = p.email || "";
+}
+
+// Salva lo stato anche se l'utente mette la tab in background a lungo o la
+// chiude bruscamente, non solo sugli eventi espliciti.
+function persistOnExit(){
+  if (currentStep >= 2) saveProgress();
+}
+window.addEventListener("pagehide", persistOnExit);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") persistOnExit();
+});
 
 function showStep(n){
   document.querySelectorAll(".step").forEach(s => s.classList.remove("active"));
   document.getElementById("step" + n).classList.add("active");
   window.scrollTo(0,0);
+  currentStep = n;
 }
 
 document.getElementById("btnStart").addEventListener("click", () => showStep(1));
@@ -401,11 +464,32 @@ document.getElementById("btnStep1").addEventListener("click", () => {
   err.style.display = "none";
   participant = { nome, cognome, email, organizzazione };
 
+  // Se c'è un progresso salvato per la STESSA email, lo ripristiniamo;
+  // altrimenti (email diversa o nessun dato) partiamo da zero, per non
+  // confondere il progresso di un altro utente sullo stesso dispositivo.
+  if (savedProgress && savedProgress.participant && savedProgress.participant.email === email){
+    watchedSeconds = new Set(savedProgress.watchedSeconds || []);
+    maxWatchedTime = savedProgress.maxWatchedTime || 0;
+    unlocked = !!savedProgress.unlocked;
+    slidesDownloaded = !!savedProgress.slidesDownloaded;
+    videoStarted = !!savedProgress.videoStarted;
+  } else {
+    clearSavedProgress();
+    watchedSeconds = new Set();
+    maxWatchedTime = 0;
+    unlocked = false;
+    slidesDownloaded = false;
+    videoStarted = false;
+  }
+  savedProgress = null;
+
   document.getElementById("navLinks").style.display = "flex";
   document.getElementById("navSlides").href = CONFIG.slidesUrl;
 
   showStep(2);
   initPlayer();
+  updateQuizUnlock();
+  saveProgress();
 });
 
 document.getElementById("privacyCheck").addEventListener("change", (e) => {
@@ -428,7 +512,14 @@ async function initPlayer(){
   player = new YT.Player("player", {
     videoId: CONFIG.youtubeVideoId,
     playerVars: { rel: 0, modestbranding: 1, controls: 1, origin: window.location.origin },
-    events: { onReady: () => { videoDuration = player.getDuration(); }, onStateChange: onPlayerStateChange }
+    events: {
+      onReady: () => {
+        videoDuration = player.getDuration();
+        if (maxWatchedTime > 0) player.seekTo(maxWatchedTime, true);
+        updateProgressUI();
+      },
+      onStateChange: onPlayerStateChange
+    }
   });
 }
 
@@ -445,8 +536,21 @@ function onPlayerStateChange(e){
 
 function trackProgress(){
   if (!player || typeof player.getCurrentTime !== "function") return;
-  watchedSeconds.add(Math.floor(player.getCurrentTime()));
-  const duration = videoDuration || player.getDuration() || 1;
+  const currentTime = player.getCurrentTime();
+  watchedSeconds.add(Math.floor(currentTime));
+  if (currentTime > maxWatchedTime) maxWatchedTime = currentTime;
+
+  updateProgressUI();
+
+  // Persistenza periodica (ogni ~5s), non ad ogni secondo visto.
+  if (Date.now() - lastPersistAt >= 5000){
+    lastPersistAt = Date.now();
+    saveProgress();
+  }
+}
+
+function updateProgressUI(){
+  const duration = videoDuration || (player && player.getDuration ? player.getDuration() : 0) || 1;
   const percent = Math.min(100, Math.round((watchedSeconds.size / duration) * 100));
 
   document.getElementById("progressBar").style.width = percent + "%";
@@ -455,8 +559,8 @@ function trackProgress(){
   if (percent >= CONFIG.minWatchPercent && !unlocked){
     unlocked = true;
     logEvent({ evento: "video_completato" });
-    updateQuizUnlock();
   }
+  updateQuizUnlock();
 }
 
 // Il pulsante per accedere al questionario si sblocca solo quando ENTRAMBE le
@@ -480,6 +584,7 @@ document.getElementById("btnDownloadSlides").addEventListener("click", () => {
     slidesDownloaded = true;
     logEvent({ evento: "slide_scaricate" });
     updateQuizUnlock();
+    saveProgress();
   }
 });
 
@@ -536,6 +641,7 @@ document.getElementById("btnSubmitQuiz").addEventListener("click", () => {
     totale: QUESTIONS.length,
     esito: passed ? "SUPERATO" : "NON SUPERATO"
   }).then(risposta => {
+    if (passed) clearSavedProgress();
     const attestatoUrl = risposta && risposta.attestatoUrl;
     showResult(score, passed, attestatoUrl);
   });
