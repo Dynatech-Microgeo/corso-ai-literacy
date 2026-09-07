@@ -86,6 +86,11 @@
   .hint{font-size:12.5px; color:var(--gray-text); margin:8px 0 0;}
   .slides-block{margin-top:20px; padding-top:18px; border-top:1px solid var(--gray-border);}
   .slides-block button{margin-top:0; margin-left:0;}
+  .fallback-unlock-box{
+    margin-top:16px; padding:14px 16px; border:1px dashed var(--gray-border);
+    border-radius:8px; background:#fff;
+  }
+  .fallback-unlock-box p{font-size:12.5px; color:var(--gray-text); margin:0 0 10px;}
   .quiz-q{
     background:#fff; border:1px solid var(--gray-border); border-radius:10px;
     padding:16px 18px; margin-bottom:14px;
@@ -290,6 +295,14 @@
         <button class="secondary" id="btnDownloadSlides">📄 Scarica le slide del corso (PDF)</button>
         <p class="hint">⚠️ È obbligatorio scaricare le slide: senza questo passaggio il pulsante
           per accedere al questionario non si attiva, anche se il video è stato visto per intero.</p>
+
+        <div class="fallback-unlock-box" id="fallbackUnlockBox" style="display:none">
+          <p>Se hai già visto il video e scaricato le slide ma il pulsante resta bloccato, spunta questa casella:</p>
+          <label class="privacy-check-label" for="fallbackUnlockCheck">
+            <input type="checkbox" id="fallbackUnlockCheck">
+            Dichiaro sotto la mia responsabilità di aver visionato integralmente il video e di averne compreso i contenuti
+          </label>
+        </div>
       </div>
 
       <button class="primary" id="btnStep2" disabled>Vai al questionario →</button>
@@ -377,6 +390,9 @@ let progressTimer = null;
 let videoStarted = false;
 let slidesDownloaded = false;
 let questionarioScaricatoLogged = false;
+let videoReached100At = null;
+let lastVideoPercent = 0;
+let selfDeclareSnapshot = null;
 let currentStep = 0;
 let lastPersistAt = 0;
 
@@ -552,6 +568,7 @@ function trackProgress(){
 function updateProgressUI(){
   const duration = videoDuration || (player && player.getDuration ? player.getDuration() : 0) || 1;
   const percent = Math.min(100, Math.round((watchedSeconds.size / duration) * 100));
+  lastVideoPercent = percent;
 
   document.getElementById("progressBar").style.width = percent + "%";
   document.getElementById("progressLabel").textContent = percent + "% visionato";
@@ -560,7 +577,24 @@ function updateProgressUI(){
     unlocked = true;
     logEvent({ evento: "video_completato" });
   }
+
+  // Via alternativa di sblocco per casi anomali (bug del player, browser
+  // particolari): se il video arriva al 100% ma il pulsante resta bloccato
+  // dopo 3 secondi (tipicamente manca solo lo scaricamento slide), mostriamo
+  // il box con l'autodichiarazione. Non sostituisce né abbassa la soglia
+  // normale del minWatchPercent sopra.
+  if (percent >= 100 && !videoReached100At){
+    videoReached100At = Date.now();
+    setTimeout(checkFallbackUnlockNeeded, 3000);
+  }
+
   updateQuizUnlock();
+}
+
+function checkFallbackUnlockNeeded(){
+  if (document.getElementById("btnStep2").disabled){
+    document.getElementById("fallbackUnlockBox").style.display = "block";
+  }
 }
 
 // Il pulsante per accedere al questionario si sblocca solo quando ENTRAMBE le
@@ -583,6 +617,25 @@ document.getElementById("btnDownloadSlides").addEventListener("click", () => {
   if (!slidesDownloaded){
     slidesDownloaded = true;
     logEvent({ evento: "slide_scaricate" });
+    updateQuizUnlock();
+    saveProgress();
+  }
+});
+
+document.getElementById("fallbackUnlockCheck").addEventListener("change", (e) => {
+  if (e.target.checked){
+    selfDeclareSnapshot = { unlocked, slidesDownloaded };
+    if (!slidesDownloaded) slidesDownloaded = true;
+    if (!unlocked) unlocked = true;
+    updateQuizUnlock();
+    logEvent({ evento: "sblocco_autodichiarazione", videoPercent: lastVideoPercent });
+    saveProgress();
+  } else {
+    if (selfDeclareSnapshot){
+      unlocked = selfDeclareSnapshot.unlocked;
+      slidesDownloaded = selfDeclareSnapshot.slidesDownloaded;
+      selfDeclareSnapshot = null;
+    }
     updateQuizUnlock();
     saveProgress();
   }
